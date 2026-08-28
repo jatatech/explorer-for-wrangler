@@ -22,6 +22,7 @@ export type ResourceKind =
   | "hyperdrive"
   | "workflow"
   | "pipeline"
+  | "container"
   | "secrets-store";
 
 export interface CloudflareResource {

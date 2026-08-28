@@ -7,6 +7,7 @@ const manifest = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "ut
   contributes: {
     commands: Array<{ command: string }>;
     menus: Record<string, Array<{ command: string }>>;
+    views: Record<string, Array<{ id: string; name: string; visibility?: string }>>;
   };
 };
 const source = fs.readFileSync(path.join(root, "src", "extension.ts"), "utf8");
@@ -29,5 +30,13 @@ describe("extension command wiring", () => {
   it("does not duplicate view-title actions", () => {
     const titleCommands = manifest.contributes.menus["view/title"]!.map((entry) => entry.command);
     expect(new Set(titleCommands).size).toBe(titleCommands.length);
+  });
+
+  it("contributes account resources as a separate collapsed view", () => {
+    expect(manifest.contributes.views.explorerForWrangler).toContainEqual({
+      id: "explorerForWrangler.accountResources",
+      name: "Cloudflare Account Resources",
+      visibility: "collapsed"
+    });
   });
 });

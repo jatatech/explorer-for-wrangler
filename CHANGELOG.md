@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0
+
+- Reorganized project trees into Environment, Project Actions, Configured Bindings, Deployed Worker, and Wrangler sections
+- Moved account-wide resource discovery into a separate Cloudflare Account Resources view that is collapsed by default
+
 ## 0.5.0
 
 - Made resource rows selection-only and added consistent inline detail/browser actions

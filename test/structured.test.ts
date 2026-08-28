@@ -30,4 +30,11 @@ describe("structured Wrangler output", () => {
     });
     expect(resources[0]).toMatchObject({ kind: "d1", name: "app-db", id: "db-id", source: "remote" });
   });
+
+  it("discovers every account resource type exposed by the explorer", () => {
+    expect(REMOTE_RESOURCE_SPECS.map((spec) => spec.label)).toEqual([
+      "D1 Databases", "R2 Buckets", "KV Namespaces", "Queues", "Vectorize Indexes", "Hyperdrive",
+      "Workflows", "Pipelines", "Containers", "Secrets Stores"
+    ]);
+  });
 });

@@ -2,7 +2,7 @@
   "name": "explorer-for-wrangler",
   "displayName": "Explorer for Wrangler",
   "description": "Run Wrangler and explore Cloudflare Worker resources from the VS Code Activity Bar.",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "publisher": "explorer-for-wrangler",
   "license": "MIT",
   "repository": {
@@ -33,7 +33,8 @@
     "workspaceContains:**/wrangler.jsonc",
     "workspaceContains:**/wrangler.json",
     "workspaceContains:**/wrangler.toml",
-    "onView:explorerForWrangler.projects"
+    "onView:explorerForWrangler.projects",
+    "onView:explorerForWrangler.accountResources"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -60,6 +61,11 @@
         {
           "id": "explorerForWrangler.projects",
           "name": "Wrangler Projects"
+        },
+        {
+          "id": "explorerForWrangler.accountResources",
+          "name": "Cloudflare Account Resources",
+          "visibility": "collapsed"
         }
       ]
     },
@@ -78,6 +84,11 @@
         "view": "explorerForWrangler.projects",
         "contents": "No Wrangler project was found in this workspace.\n\n[Create a New Worker Project](command:explorerForWrangler.setupCreate)\n\n[Initialize a Basic Worker Here](command:explorerForWrangler.setupInit)\n\n[Import a Worker from the Dashboard](command:explorerForWrangler.setupImport)\n\n[Add wrangler.jsonc Only](command:explorerForWrangler.setupAddConfig)\n\n[Install or Update Wrangler Locally](command:explorerForWrangler.setupInstall)",
         "when": "explorerForWrangler.hasWorkspaceFolders && !explorerForWrangler.hasProjects && explorerForWrangler.hasWrangler"
+      },
+      {
+        "view": "explorerForWrangler.accountResources",
+        "contents": "Open or create a Wrangler project to discover resources in its Cloudflare account.",
+        "when": "!explorerForWrangler.hasProjects"
       }
     ],
     "commands": [
@@ -379,6 +390,11 @@
           "command": "explorerForWrangler.configure",
           "when": "view == explorerForWrangler.projects",
           "group": "navigation@4"
+        },
+        {
+          "command": "explorerForWrangler.refreshRemote",
+          "when": "view == explorerForWrangler.accountResources",
+          "group": "navigation"
         }
       ],
       "view/item/context": [
@@ -398,6 +414,16 @@
           "group": "navigation@3"
         },
         {
+          "command": "explorerForWrangler.openConfig",
+          "when": "view == explorerForWrangler.accountResources && viewItem == accountProject",
+          "group": "navigation@1"
+        },
+        {
+          "command": "explorerForWrangler.selectEnvironment",
+          "when": "view == explorerForWrangler.accountResources && viewItem == accountProject",
+          "group": "navigation@2"
+        },
+        {
           "command": "explorerForWrangler.refreshAuth",
           "when": "view == explorerForWrangler.projects && viewItem == auth",
           "group": "inline@1"
@@ -414,12 +440,12 @@
         },
         {
           "command": "explorerForWrangler.resourceDetails",
-          "when": "view == explorerForWrangler.projects && viewItem =~ /resource\\./",
+          "when": "view =~ /explorerForWrangler\\.(projects|accountResources)/ && viewItem =~ /resource\\./",
           "group": "inline@1"
         },
         {
           "command": "explorerForWrangler.copyResourceName",
-          "when": "view == explorerForWrangler.projects && viewItem =~ /resource\\./",
+          "when": "view =~ /explorerForWrangler\\.(projects|accountResources)/ && viewItem =~ /resource\\./",
           "group": "navigation@99"
         },
         {
@@ -439,47 +465,47 @@
         },
         {
           "command": "explorerForWrangler.r2Browse",
-          "when": "view == explorerForWrangler.projects && viewItem == resource.r2",
+          "when": "view =~ /explorerForWrangler\\.(projects|accountResources)/ && viewItem == resource.r2",
           "group": "inline@2"
         },
         {
           "command": "explorerForWrangler.kvBrowse",
-          "when": "view == explorerForWrangler.projects && viewItem == resource.kv",
+          "when": "view =~ /explorerForWrangler\\.(projects|accountResources)/ && viewItem == resource.kv",
           "group": "inline@2"
         },
         {
           "command": "explorerForWrangler.d1Query",
-          "when": "view == explorerForWrangler.projects && viewItem == resource.d1",
+          "when": "view =~ /explorerForWrangler\\.(projects|accountResources)/ && viewItem == resource.d1",
           "group": "inline@2"
         },
         {
           "command": "explorerForWrangler.queuePause",
-          "when": "view == explorerForWrangler.projects && viewItem == resource.queue",
+          "when": "view =~ /explorerForWrangler\\.(projects|accountResources)/ && viewItem == resource.queue",
           "group": "queue@1"
         },
         {
           "command": "explorerForWrangler.queueResume",
-          "when": "view == explorerForWrangler.projects && viewItem == resource.queue",
+          "when": "view =~ /explorerForWrangler\\.(projects|accountResources)/ && viewItem == resource.queue",
           "group": "queue@2"
         },
         {
           "command": "explorerForWrangler.queuePurge",
-          "when": "view == explorerForWrangler.projects && viewItem == resource.queue",
+          "when": "view =~ /explorerForWrangler\\.(projects|accountResources)/ && viewItem == resource.queue",
           "group": "queue@3"
         },
         {
           "command": "explorerForWrangler.vectorizeVectors",
-          "when": "view == explorerForWrangler.projects && viewItem == resource.vectorize",
+          "when": "view =~ /explorerForWrangler\\.(projects|accountResources)/ && viewItem == resource.vectorize",
           "group": "navigation@2"
         },
         {
           "command": "explorerForWrangler.workflowInstances",
-          "when": "view == explorerForWrangler.projects && viewItem == resource.workflow",
+          "when": "view =~ /explorerForWrangler\\.(projects|accountResources)/ && viewItem == resource.workflow",
           "group": "inline@2"
         },
         {
           "command": "explorerForWrangler.workflowTrigger",
-          "when": "view == explorerForWrangler.projects && viewItem == resource.workflow",
+          "when": "view =~ /explorerForWrangler\\.(projects|accountResources)/ && viewItem == resource.workflow",
           "group": "workflow@2"
         }
       ],

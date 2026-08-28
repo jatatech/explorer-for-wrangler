@@ -17,7 +17,9 @@ export const REMOTE_RESOURCE_SPECS: readonly RemoteResourceSpec[] = [
   { kind: "vectorize", label: "Vectorize Indexes", icon: "symbol-array", args: ["vectorize", "list", "--json"], nameKeys: ["name"], idKeys: ["id"] },
   { kind: "hyperdrive", label: "Hyperdrive", icon: "database", args: ["hyperdrive", "list"], nameKeys: ["name"], idKeys: ["id"] },
   { kind: "workflow", label: "Workflows", icon: "run-all", args: ["workflows", "list", "--per-page", "100"], nameKeys: ["name", "workflow_name"], idKeys: ["id", "workflow_id"] },
-  { kind: "pipeline", label: "Pipelines", icon: "server-process", args: ["pipelines", "list", "--per-page", "100", "--json"], nameKeys: ["name"], idKeys: ["id"] }
+  { kind: "pipeline", label: "Pipelines", icon: "server-process", args: ["pipelines", "list", "--per-page", "100", "--json"], nameKeys: ["name"], idKeys: ["id"] },
+  { kind: "container", label: "Containers", icon: "package", args: ["containers", "list"], nameKeys: ["name", "container_name", "id"], idKeys: ["id", "container_id"] },
+  { kind: "secrets-store", label: "Secrets Stores", icon: "lock", args: ["secrets-store", "store", "list"], nameKeys: ["name", "store_name"], idKeys: ["id", "store_id"] }
 ] as const;
 
 export function parseJsonOutput(output: string): unknown | undefined {
@@ -35,7 +37,7 @@ export function rowsFromOutput(output: string): Record<string, unknown>[] {
   const parsed = parseJsonOutput(output);
   if (Array.isArray(parsed)) return parsed.filter(isRecord);
   if (isRecord(parsed)) {
-    for (const key of ["results", "result", "items", "databases", "buckets", "namespaces", "queues", "indexes", "configs", "workflows", "pipelines"]) {
+    for (const key of ["results", "result", "items", "databases", "buckets", "namespaces", "queues", "indexes", "configs", "workflows", "pipelines", "containers", "stores"]) {
       const value = parsed[key];
       if (Array.isArray(value)) return value.filter(isRecord);
     }

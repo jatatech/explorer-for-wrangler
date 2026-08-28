@@ -6,7 +6,7 @@ import { RemoteResourceService } from "./remote";
 import { WranglerRunner } from "./runner";
 import { SetupService } from "./setup";
 import { WranglerStatusBar } from "./statusBar";
-import { WranglerTreeProvider, type ResourceNode } from "./tree";
+import { AccountResourcesTreeProvider, WranglerTreeProvider, type ResourceNode } from "./tree";
 import type { WranglerOperation, WranglerProject } from "./model";
 import { parseJsonOutput, rowsFromOutput } from "./structured";
 import { workerName } from "./config";
@@ -18,10 +18,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const diagnostics = vscode.languages.createDiagnosticCollection("wrangler");
   const operations = new WranglerOperations(runner, output, diagnostics);
   const remote = new RemoteResourceService(operations);
-  const provider = new WranglerTreeProvider(context.workspaceState, new AuthService(runner), remote);
+  const provider = new WranglerTreeProvider(context.workspaceState, new AuthService(runner));
+  const accountProvider = new AccountResourcesTreeProvider(provider, remote);
   const view = vscode.window.createTreeView("explorerForWrangler.projects", { treeDataProvider: provider, showCollapseAll: true });
+  const accountView = vscode.window.createTreeView("explorerForWrangler.accountResources", { treeDataProvider: accountProvider, showCollapseAll: true });
   const statusBar = new WranglerStatusBar(provider);
-  context.subscriptions.push(view, output, diagnostics, runner, operations, statusBar);
+  context.subscriptions.push(view, accountView, accountProvider, output, diagnostics, runner, operations, statusBar);
   context.subscriptions.push(operations.onDidChange((operation) => provider.setOperation(operation)));
   context.subscriptions.push(operations.onDidBusyChange(() => provider.refreshTree()));
 
@@ -69,8 +71,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   register("explorerForWrangler.configure", () =>
     vscode.commands.executeCommand("workbench.action.openSettings", "@ext:explorer-for-wrangler.explorer-for-wrangler"));
   register("explorerForWrangler.refreshRemote", async (candidate?: WranglerProject) => {
-    const project = await pickProject(candidate);
-    if (project) await provider.refreshRemote(project);
+    if (candidate?.configUri) {
+      await accountProvider.refresh(candidate);
+      return;
+    }
+    await accountProvider.refreshAll();
   });
   register("explorerForWrangler.statusMenu", async () => {
     const project = statusBar.getProject() ?? await pickProject();

@@ -11,8 +11,9 @@ Explorer for Wrangler puts common workflows for Wrangler, the Cloudflare® Devel
 - Live authentication status from `wrangler whoami`, plus login and confirmed logout actions
 - Project-local, explicitly configured, and system-wide Wrangler resolution
 - Buttons for `dev`, `deploy`, deploy dry-run, `tail`, `types`, and startup checks
+- Project actions, configured bindings, deployed Worker state, and Wrangler tooling grouped by their actual scope
 - Authentication status, version listing, secret-name listing, and interactive secret creation
-- Deployment status/history and account-level listings for D1, R2, KV, Queues, Vectorize, Hyperdrive, Workflows, Pipelines, Containers, and Secrets Store
+- A separate, collapsed-by-default account-resource view for D1, R2, KV, Queues, Vectorize, Hyperdrive, Workflows, Pipelines, Containers, and Secrets Store
 - Configured D1, R2, KV, Queue, Durable Object, Vectorize, Hyperdrive, Workflow, Pipeline, and Secrets Store bindings
 - D1 database info, migration creation, local migration apply, and confirmed remote migration apply
 - R2 bucket info
@@ -60,7 +61,9 @@ Project-local Wrangler installations can be updated explicitly from the project 
 
 1. Open a folder containing a Wrangler configuration file.
 2. Select the lasso-and-clouds icon in the Activity Bar.
-3. Choose an environment, select a resource, then use its inline or context-menu actions. Resource rows are selection-only, so double-clicking a row cannot run an action twice.
+3. Choose an environment, select a configured binding, then use its inline or context-menu actions. Resource rows are selection-only, so double-clicking a row cannot run an action twice.
+
+The main **Wrangler Projects** view keeps project actions, bindings, deployed Worker state, and Wrangler authentication/tooling together. Expand the separate **Cloudflare Account Resources** view when you need to inspect resources beyond those configured as bindings in the current project.
 
 Remote D1 migrations require an explicit modal confirmation. Destructive resource deletion is intentionally outside the initial release.
 
