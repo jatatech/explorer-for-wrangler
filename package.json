@@ -1,0 +1,461 @@
+{
+  "name": "explorer-for-wrangler",
+  "displayName": "Explorer for Wrangler",
+  "description": "Run Wrangler and explore Cloudflare Worker resources from the VS Code Activity Bar.",
+  "version": "0.3.0",
+  "publisher": "explorer-for-wrangler",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jatatech/explorer-for-wrangler.git"
+  },
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Explorer for Wrangler executes project-local CLI commands and setup tools."
+    }
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "cloudflare",
+    "workers",
+    "wrangler",
+    "d1",
+    "r2",
+    "kv"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/wrangler.jsonc",
+    "workspaceContains:**/wrangler.json",
+    "workspaceContains:**/wrangler.toml",
+    "onView:wranglerExplorer.projects"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "icons": {
+      "explorer-for-wrangler": {
+        "description": "Explorer for Wrangler lasso and clouds",
+        "default": {
+          "fontPath": "media/explorer-for-wrangler.woff",
+          "fontCharacter": "\\E001"
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "wranglerExplorer",
+          "title": "Explorer for Wrangler",
+          "icon": "media/explorer-for-wrangler.svg"
+        }
+      ]
+    },
+    "views": {
+      "wranglerExplorer": [
+        {
+          "id": "wranglerExplorer.projects",
+          "name": "Wrangler Projects"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "wranglerExplorer.projects",
+        "contents": "Open a folder to create or initialize a Cloudflare Worker project.",
+        "when": "!wranglerExplorer.hasWorkspaceFolders"
+      },
+      {
+        "view": "wranglerExplorer.projects",
+        "contents": "No Wrangler project was found, and Wrangler is not currently available.\n\n[Install Wrangler Locally](command:wranglerExplorer.setupInstall)\n\n[Create a New Worker Project](command:wranglerExplorer.setupCreate)\n\n[Configure Wrangler Executable](command:wranglerExplorer.setupConfigurePath)",
+        "when": "wranglerExplorer.hasWorkspaceFolders && !wranglerExplorer.hasProjects && !wranglerExplorer.hasWrangler"
+      },
+      {
+        "view": "wranglerExplorer.projects",
+        "contents": "No Wrangler project was found in this workspace.\n\n[Create a New Worker Project](command:wranglerExplorer.setupCreate)\n\n[Initialize a Basic Worker Here](command:wranglerExplorer.setupInit)\n\n[Import a Worker from the Dashboard](command:wranglerExplorer.setupImport)\n\n[Add wrangler.jsonc Only](command:wranglerExplorer.setupAddConfig)\n\n[Install or Update Wrangler Locally](command:wranglerExplorer.setupInstall)",
+        "when": "wranglerExplorer.hasWorkspaceFolders && !wranglerExplorer.hasProjects && wranglerExplorer.hasWrangler"
+      }
+    ],
+    "commands": [
+      {
+        "command": "wranglerExplorer.refresh",
+        "title": "Wrangler: Refresh Explorer",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "wranglerExplorer.showOutput",
+        "title": "Wrangler: Show Output",
+        "icon": "$(output)"
+      },
+      {
+        "command": "wranglerExplorer.clearOutput",
+        "title": "Wrangler: Clear Output",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "wranglerExplorer.statusMenu",
+        "title": "Wrangler: Show Project Menu"
+      },
+      {
+        "command": "wranglerExplorer.switchProject",
+        "title": "Wrangler: Switch Project"
+      },
+      {
+        "command": "wranglerExplorer.openConfig",
+        "title": "Wrangler: Open Configuration"
+      },
+      {
+        "command": "wranglerExplorer.selectEnvironment",
+        "title": "Wrangler: Select Environment"
+      },
+      {
+        "command": "wranglerExplorer.install",
+        "title": "Wrangler: Install in Project"
+      },
+      {
+        "command": "wranglerExplorer.updateWrangler",
+        "title": "Wrangler: Update Project Installation"
+      },
+      {
+        "command": "wranglerExplorer.setupInstall",
+        "title": "Wrangler: Install Locally in Workspace"
+      },
+      {
+        "command": "wranglerExplorer.setupConfigurePath",
+        "title": "Wrangler: Configure Executable Path"
+      },
+      {
+        "command": "wranglerExplorer.setupCreate",
+        "title": "Wrangler: Create New Worker Project"
+      },
+      {
+        "command": "wranglerExplorer.setupInit",
+        "title": "Wrangler: Initialize Basic Worker Here"
+      },
+      {
+        "command": "wranglerExplorer.setupImport",
+        "title": "Wrangler: Import Worker from Dashboard"
+      },
+      {
+        "command": "wranglerExplorer.setupAddConfig",
+        "title": "Wrangler: Add Configuration Only"
+      },
+      {
+        "command": "wranglerExplorer.dev",
+        "title": "Wrangler: Start Development Server"
+      },
+      {
+        "command": "wranglerExplorer.deploy",
+        "title": "Wrangler: Deploy"
+      },
+      {
+        "command": "wranglerExplorer.deployDryRun",
+        "title": "Wrangler: Deploy (Dry Run)"
+      },
+      {
+        "command": "wranglerExplorer.tail",
+        "title": "Wrangler: Tail Logs"
+      },
+      {
+        "command": "wranglerExplorer.types",
+        "title": "Wrangler: Generate Types"
+      },
+      {
+        "command": "wranglerExplorer.checkStartup",
+        "title": "Wrangler: Check Startup"
+      },
+      {
+        "command": "wranglerExplorer.whoami",
+        "title": "Wrangler: Show Authentication Status"
+      },
+      {
+        "command": "wranglerExplorer.refreshAuth",
+        "title": "Wrangler: Refresh Authentication Status",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "wranglerExplorer.login",
+        "title": "Wrangler: Log In to Cloudflare"
+      },
+      {
+        "command": "wranglerExplorer.logout",
+        "title": "Wrangler: Log Out of Cloudflare"
+      },
+      {
+        "command": "wranglerExplorer.versions",
+        "title": "Wrangler: List Versions"
+      },
+      {
+        "command": "wranglerExplorer.deployments",
+        "title": "Wrangler: List Deployments"
+      },
+      {
+        "command": "wranglerExplorer.deploymentStatus",
+        "title": "Wrangler: Show Deployment Status"
+      },
+      {
+        "command": "wranglerExplorer.secrets",
+        "title": "Wrangler: List Secrets"
+      },
+      {
+        "command": "wranglerExplorer.putSecret",
+        "title": "Wrangler: Add Secret"
+      },
+      {
+        "command": "wranglerExplorer.d1Info",
+        "title": "Wrangler: Show D1 Database Info"
+      },
+      {
+        "command": "wranglerExplorer.d1CreateMigration",
+        "title": "Wrangler: Create D1 Migration"
+      },
+      {
+        "command": "wranglerExplorer.d1ApplyLocal",
+        "title": "Wrangler: Apply D1 Migrations Locally"
+      },
+      {
+        "command": "wranglerExplorer.d1ApplyRemote",
+        "title": "Wrangler: Apply D1 Migrations Remotely"
+      },
+      {
+        "command": "wranglerExplorer.r2Info",
+        "title": "Wrangler: Show R2 Bucket Info"
+      },
+      {
+        "command": "wranglerExplorer.listD1",
+        "title": "Wrangler: List D1 Databases"
+      },
+      {
+        "command": "wranglerExplorer.listR2",
+        "title": "Wrangler: List R2 Buckets"
+      },
+      {
+        "command": "wranglerExplorer.listKv",
+        "title": "Wrangler: List KV Namespaces"
+      },
+      {
+        "command": "wranglerExplorer.listQueues",
+        "title": "Wrangler: List Queues"
+      },
+      {
+        "command": "wranglerExplorer.listVectorize",
+        "title": "Wrangler: List Vectorize Indexes"
+      },
+      {
+        "command": "wranglerExplorer.listHyperdrive",
+        "title": "Wrangler: List Hyperdrive Configurations"
+      },
+      {
+        "command": "wranglerExplorer.listWorkflows",
+        "title": "Wrangler: List Workflows"
+      },
+      {
+        "command": "wranglerExplorer.listPipelines",
+        "title": "Wrangler: List Pipelines"
+      },
+      {
+        "command": "wranglerExplorer.listContainers",
+        "title": "Wrangler: List Containers"
+      },
+      {
+        "command": "wranglerExplorer.listSecretStores",
+        "title": "Wrangler: List Secrets Stores"
+      },
+      {
+        "command": "wranglerExplorer.copyResourceName",
+        "title": "Copy Resource Name"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "wranglerExplorer.refresh",
+          "when": "view == wranglerExplorer.projects",
+          "group": "navigation"
+        },
+        {
+          "command": "wranglerExplorer.showOutput",
+          "when": "view == wranglerExplorer.projects",
+          "group": "navigation@2"
+        },
+        {
+          "command": "wranglerExplorer.clearOutput",
+          "when": "view == wranglerExplorer.projects",
+          "group": "navigation@3"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "wranglerExplorer.openConfig",
+          "when": "view == wranglerExplorer.projects && viewItem == project",
+          "group": "navigation@1"
+        },
+        {
+          "command": "wranglerExplorer.selectEnvironment",
+          "when": "view == wranglerExplorer.projects && viewItem == project",
+          "group": "navigation@2"
+        },
+        {
+          "command": "wranglerExplorer.updateWrangler",
+          "when": "view == wranglerExplorer.projects && viewItem == project",
+          "group": "navigation@3"
+        },
+        {
+          "command": "wranglerExplorer.refreshAuth",
+          "when": "view == wranglerExplorer.projects && viewItem == auth",
+          "group": "inline@1"
+        },
+        {
+          "command": "wranglerExplorer.login",
+          "when": "view == wranglerExplorer.projects && viewItem == auth.loggedOut",
+          "group": "navigation@1"
+        },
+        {
+          "command": "wranglerExplorer.logout",
+          "when": "view == wranglerExplorer.projects && viewItem == auth.loggedIn",
+          "group": "navigation@1"
+        },
+        {
+          "command": "wranglerExplorer.copyResourceName",
+          "when": "view == wranglerExplorer.projects && viewItem =~ /resource\\./",
+          "group": "inline@1"
+        },
+        {
+          "command": "wranglerExplorer.d1Info",
+          "when": "view == wranglerExplorer.projects && viewItem == resource.d1",
+          "group": "navigation@1"
+        },
+        {
+          "command": "wranglerExplorer.d1CreateMigration",
+          "when": "view == wranglerExplorer.projects && viewItem == resource.d1",
+          "group": "d1@1"
+        },
+        {
+          "command": "wranglerExplorer.d1ApplyLocal",
+          "when": "view == wranglerExplorer.projects && viewItem == resource.d1",
+          "group": "d1@2"
+        },
+        {
+          "command": "wranglerExplorer.d1ApplyRemote",
+          "when": "view == wranglerExplorer.projects && viewItem == resource.d1",
+          "group": "d1@3"
+        },
+        {
+          "command": "wranglerExplorer.r2Info",
+          "when": "view == wranglerExplorer.projects && viewItem == resource.r2",
+          "group": "navigation@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "wranglerExplorer.statusMenu",
+          "when": "false"
+        },
+        {
+          "command": "wranglerExplorer.d1Info",
+          "when": "false"
+        },
+        {
+          "command": "wranglerExplorer.d1CreateMigration",
+          "when": "false"
+        },
+        {
+          "command": "wranglerExplorer.d1ApplyLocal",
+          "when": "false"
+        },
+        {
+          "command": "wranglerExplorer.d1ApplyRemote",
+          "when": "false"
+        },
+        {
+          "command": "wranglerExplorer.r2Info",
+          "when": "false"
+        },
+        {
+          "command": "wranglerExplorer.copyResourceName",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Explorer for Wrangler",
+      "properties": {
+        "wranglerExplorer.configFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "wrangler.jsonc",
+            "wrangler.json",
+            "wrangler.toml"
+          ],
+          "description": "Wrangler configuration filenames to discover."
+        },
+        "wranglerExplorer.revealTaskTerminal": {
+          "type": "string",
+          "enum": [
+            "always",
+            "silent",
+            "never"
+          ],
+          "default": "always",
+          "description": "When to reveal terminals created for Wrangler commands."
+        },
+        "wranglerExplorer.clearOutputBeforeCommand": {
+          "type": "boolean",
+          "default": false,
+          "scope": "resource",
+          "description": "Clear the Explorer for Wrangler Output Channel before each bounded command."
+        },
+        "wranglerExplorer.wranglerPath": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "description": "Optional absolute path to a Wrangler executable. When empty, Explorer for Wrangler prefers a project-local install and then checks the system PATH."
+        },
+        "wranglerExplorer.preferLocalWrangler": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "Prefer node_modules/.bin/wrangler over a system-wide Wrangler installation."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "clean": "rimraf dist coverage *.vsix",
+    "generate:icon-font": "node scripts/generate-icon-font.mjs",
+    "compile": "node esbuild.mjs",
+    "smoke:bundle": "node test/bundle-smoke.cjs",
+    "watch": "node esbuild.mjs --watch",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint src test",
+    "test": "npm run generate:icon-font && vitest run",
+    "package": "npm run compile && npm run smoke:bundle && vsce package --no-dependencies",
+    "vscode:prepublish": "npm run compile"
+  },
+  "dependencies": {
+    "@iarna/toml": "^2.2.5",
+    "jsonc-parser": "^3.3.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.2",
+    "@types/vscode": "^1.96.0",
+    "@vscode/vsce": "^3.2.1",
+    "esbuild": "^0.24.2",
+    "eslint": "^9.17.0",
+    "fantasticon": "4.1.0",
+    "globals": "^15.14.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.18.2",
+    "vitest": "^2.1.8",
+    "wrangler": "^4.0.0"
+  }
+}
