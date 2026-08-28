@@ -2,9 +2,14 @@
   "name": "explorer-for-wrangler",
   "displayName": "Explorer for Wrangler",
   "description": "Run Wrangler and explore Cloudflare Worker resources from the VS Code Activity Bar.",
-  "version": "0.7.0",
-  "publisher": "explorer-for-wrangler",
+  "version": "1.0.0",
+  "publisher": "jatatech",
   "license": "MIT",
+  "icon": "media/explorer-for-wrangler.png",
+  "homepage": "https://github.com/jatatech/explorer-for-wrangler#readme",
+  "bugs": {
+    "url": "https://github.com/jatatech/explorer-for-wrangler/issues"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/jatatech/explorer-for-wrangler.git"
@@ -655,15 +660,15 @@
     }
   },
   "scripts": {
-    "clean": "rimraf dist coverage *.vsix",
-    "generate:icon-font": "node scripts/generate-icon-font.mjs",
+    "clean": "rimraf dist coverage build *.vsix",
+    "generate:icons": "node scripts/generate-icon-font.mjs",
     "compile": "node esbuild.mjs",
     "smoke:bundle": "node test/bundle-smoke.cjs",
     "watch": "node esbuild.mjs --watch",
     "check-types": "tsc --noEmit",
     "lint": "eslint src test",
-    "test": "npm run generate:icon-font && vitest run",
-    "package": "npm run compile && npm run smoke:bundle && vsce package --no-dependencies",
+    "test": "npm run generate:icons && vitest run",
+    "package": "npm run compile && npm run smoke:bundle && node scripts/package-extension.mjs",
     "vscode:prepublish": "npm run compile"
   },
   "dependencies": {
@@ -680,6 +685,7 @@
     "fantasticon": "4.1.0",
     "globals": "^15.14.0",
     "rimraf": "^6.0.1",
+    "sharp": "^0.35.2",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.2",
     "vitest": "^2.1.8",

@@ -5,6 +5,7 @@ src/**
 test/**
 scripts/**
 coverage/**
+build/**
 node_modules/**
 **/*.map
 *.vsix

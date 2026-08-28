@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0
+
+- First stable public release of Explorer for Wrangler
+- Added Marketplace publisher, homepage, issue tracker, generated PNG icon, and getting-started screenshot metadata
+- Added reproducible VSIX output under `build/` and a validated GitHub Release workflow for semantic version tags
+
 ## 0.7.0
 
 - Added Wrangler installation source and active version details to the project tree

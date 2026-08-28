@@ -4,6 +4,8 @@ Explorer for Wrangler puts common workflows for Wrangler, the Cloudflare® Devel
 
 > **Independent project:** This extension is not affiliated with, authorised by, sponsored by, or otherwise approved by Cloudflare, Inc. Cloudflare and Cloudflare Workers® are trademarks and/or registered trademarks of Cloudflare, Inc. in the United States and other jurisdictions. Wrangler is a product of Cloudflare, Inc.
 
+![Explorer for Wrangler getting-started view](media/screenshots/getting-started.png)
+
 ## Features
 
 - Multi-root and monorepo project discovery
@@ -94,9 +96,15 @@ npm run lint
 npm run package
 ```
 
+The Marketplace PNG and status-bar icon font are generated from `media/explorer-for-wrangler.svg` during compilation. Packaged VSIX files are written to `build/`.
+
 Press `F5` in VS Code to launch an Extension Development Host.
 
-The Activity Bar SVG is also the source for the custom status-bar icon. Compile, watch, test, and package commands regenerate `media/explorer-for-wrangler.woff` automatically.
+The Activity Bar SVG is also the source for the custom status-bar and Marketplace icons. Compile, watch, test, and package commands regenerate `media/explorer-for-wrangler.woff` and `media/explorer-for-wrangler.png` automatically.
+
+## Releases
+
+Create an annotated version tag matching `package.json`, for example `v1.0.0`, and push it to GitHub. The release workflow validates the extension, builds the VSIX, creates a GitHub Release, and attaches the package. Marketplace publishing remains a separate, deliberate step.
 
 ## Storage browser notes
 

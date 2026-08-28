@@ -1,8 +1,8 @@
 import * as esbuild from "esbuild";
-import { generateIconFont } from "./scripts/generate-icon-font.mjs";
+import { generateIconAssets } from "./scripts/generate-icon-font.mjs";
 
 const watch = process.argv.includes("--watch");
-await generateIconFont();
+await generateIconAssets();
 const context = await esbuild.context({
   entryPoints: ["src/extension.ts"],
   bundle: true,
