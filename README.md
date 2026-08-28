@@ -21,6 +21,13 @@ Explorer for Wrangler puts common workflows for Wrangler, the Cloudflare® Devel
 - Contextual Status Bar project/environment state and quick actions
 - Per-project recent operation state with direct access to detailed output
 - Cancellable progress and completion/error notifications for bounded operations
+- Automatic remote account-resource discovery with an explicit refresh action
+- Deployment and version tables, version detail panels, and confirmed production rollback
+- KV key/value browsing and R2 object-key navigation with upload, download, and confirmed deletion
+- D1 SQL editor with local/remote execution and a results grid
+- Queue delivery controls and purge, Vectorize index/vector inspection, Hyperdrive details, Workflow details/instances/triggering, and Pipeline details
+- Live status for interactive Wrangler tasks and bounded operations, plus structured Problems diagnostics
+- A Worker-aware **Open Cloudflare Dashboard** deep link that respects the selected Wrangler environment and account
 
 Explorer for Wrangler delegates to Wrangler instead of reimplementing Cloudflare APIs. Authentication remains with Wrangler, and secret values are entered only into Wrangler's terminal prompt.
 
@@ -32,7 +39,7 @@ Wrangler 4 or newer can be installed in the project:
 npm install -D wrangler@latest
 ```
 
-Alternatively, a system-wide `wrangler` on `PATH` is supported. Resolution defaults to an explicitly configured `wranglerExplorer.wranglerPath`, then the nearest project-local `node_modules/.bin/wrangler`, then the system `PATH`. Turn off `wranglerExplorer.preferLocalWrangler` to prefer the system installation over a local one.
+Alternatively, a system-wide `wrangler` on `PATH` is supported. Resolution defaults to an explicitly configured `explorerForWrangler.wranglerPath`, then the nearest project-local `node_modules/.bin/wrangler`, then the system `PATH`. Turn off `explorerForWrangler.preferLocalWrangler` to prefer the system installation over a local one.
 
 If Wrangler is missing, the extension offers to install it using the lockfile-detected package manager.
 
@@ -53,7 +60,7 @@ Project-local Wrangler installations can be updated explicitly from the project 
 
 1. Open a folder containing a Wrangler configuration file.
 2. Select the lasso-and-clouds icon in the Activity Bar.
-3. Choose an environment, then run an action or inspect a configured resource.
+3. Choose an environment, select a resource, then use its inline or context-menu actions. Resource rows are selection-only, so double-clicking a row cannot run an action twice.
 
 Remote D1 migrations require an explicit modal confirmation. Destructive resource deletion is intentionally outside the initial release.
 
@@ -62,11 +69,14 @@ Remote D1 migrations require an explicit modal confirmation. Destructive resourc
 Explorer for Wrangler chooses its output surface according to the operation:
 
 - `dev`, `tail`, login, logout, Wrangler installation, and secret entry use interactive task terminals.
-- Deploys and D1 migration application use cancellable progress notifications.
-- Bounded command logs stream to the **Explorer for Wrangler** Output Channel.
-- Output is preserved by default; use **Wrangler: Clear Output** manually or enable `wranglerExplorer.clearOutputBeforeCommand` for automatic clearing.
+- Read-only lists, resource details, deployment/version data, and D1 results use structured webviews. Wrangler JSON is rendered as fields and tables, including D1 `data_types`, rather than shown as a raw JSON dump.
+- Actions such as deploys and D1 migration application use cancellable progress notifications, while their command logs stream to the **Explorer for Wrangler** Output Channel.
+- Output is preserved by default. Use **Wrangler: Clear Output** manually, or choose the Explorer title-bar gear (**Wrangler: Configure Explorer**) and enable **Clear Output Before Command**.
 - Success and failure notifications link to detailed output; failures can be retried in a terminal.
+- Identical bounded commands and interactive tasks cannot be started again while already running. These flags exist only in memory and are reset whenever the extension starts.
 - The latest bounded operation remains visible beneath its project in the Explorer.
+- Interactive Wrangler tasks also publish running/completed/failed state beneath their project.
+- Parseable Wrangler errors and warnings are surfaced in VS Code's Problems view.
 - The Status Bar follows the active editor's nearest Wrangler project and opens a quick-action menu.
 
 ## Development
@@ -83,14 +93,9 @@ Press `F5` in VS Code to launch an Extension Development Host.
 
 The Activity Bar SVG is also the source for the custom status-bar icon. Compile, watch, test, and package commands regenerate `media/explorer-for-wrangler.woff` automatically.
 
-## Roadmap
+## Storage browser notes
 
-- Remote account resource discovery and refresh
-- Deployment and version detail views with rollback flows
-- KV key and R2 object browsers
-- D1 query editor and results grid
-- Queue, Vectorize, Hyperdrive, Workflow, and Pipeline actions
-- Wrangler task status and structured diagnostics
+Wrangler provides remote KV key listing, so the KV browser can enumerate and inspect keys. Wrangler currently has no R2 object-list subcommand; the R2 panel therefore navigates known object keys and supports inspection, download, upload, and confirmed deletion without reading Cloudflare credentials directly.
 
 ## Security model
 

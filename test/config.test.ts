@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { configForEnvironment, environments, parseWranglerConfig, resourceGroups } from "../src/config";
+import { configForEnvironment, environments, parseWranglerConfig, resourceGroups, workerName } from "../src/config";
 
 describe("Wrangler config", () => {
+  it("resolves environment-specific Worker names", () => {
+    expect(workerName({ name: "app", env: { staging: { name: "app-staging" } } }, "staging")).toBe("app-staging");
+  });
   it("parses JSONC and discovers environments", () => {
     const config = parseWranglerConfig("wrangler.jsonc", `{
       // comments and trailing commas are supported

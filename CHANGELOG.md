@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.5.0
+
+- Made resource rows selection-only and added consistent inline detail/browser actions
+- Added in-memory duplicate-execution guards for bounded commands, refreshes, interactive tasks, and reusable webview panels; all guards reset on extension activation
+- Replaced raw JSON detail/results output with typed field and table rendering, including D1 `data_types`
+- Routed read-only lists and details to structured webviews while retaining operational logs in the Output Channel
+- Added a title-bar and Status Bar menu shortcut to the extension settings
+
+## 0.4.1
+
+- Moved commands, views, context keys, and settings to the unique `explorerForWrangler` namespace so the extension can coexist with the legacy `wrangler-explorer` extension without duplicate actions or activation failures
+- Added live Extension Host coverage that verifies every contributed command is registered
+
+## 0.4.0
+
+- Added remote account-resource discovery and refresh in the Explorer tree
+- Added deployment/version tables, details, and confirmed rollback flows
+- Added KV key browsing, R2 object-key navigation, and a D1 query/results panel
+- Added Queue, Vectorize, Hyperdrive, Workflow, and Pipeline context actions
+- Added interactive task status and structured Wrangler diagnostics
+- Added environment-aware Cloudflare Dashboard deep links for Workers
+
 ## 0.3.0
 
 - Added native empty-state onboarding when no Wrangler project is detected
@@ -11,7 +33,7 @@
 ## 0.2.1
 
 - Added a manual **Clear Output** action
-- Added the opt-in `wranglerExplorer.clearOutputBeforeCommand` setting
+- Added the opt-in `explorerForWrangler.clearOutputBeforeCommand` setting
 
 ## 0.2.0
 

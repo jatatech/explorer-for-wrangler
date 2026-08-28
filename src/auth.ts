@@ -32,7 +32,8 @@ export class AuthService {
         state: "loggedIn",
         label: identity.email ? `Authenticated as ${identity.email}` : `Authenticated (${identity.authType ?? "Cloudflare"})`,
         detail: `${sourceDetail(resolved)}${accountDetail}`,
-        executable: resolved
+        executable: resolved,
+        accounts: identity.accounts
       };
     }
     if (identity?.loggedIn === false) {

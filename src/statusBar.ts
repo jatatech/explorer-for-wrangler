@@ -9,7 +9,7 @@ export class WranglerStatusBar implements vscode.Disposable {
 
   constructor(private readonly provider: WranglerTreeProvider) {
     this.item.name = "Wrangler Project";
-    this.item.command = "wranglerExplorer.statusMenu";
+    this.item.command = "explorerForWrangler.statusMenu";
     this.disposables.push(
       vscode.window.onDidChangeActiveTextEditor(() => this.refresh()),
       provider.onDidChangeTreeData(() => this.refresh())

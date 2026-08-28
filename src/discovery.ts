@@ -7,7 +7,7 @@ const EXCLUDE = "**/{node_modules,.git,.wrangler,dist,build,out}/**";
 
 export async function discoverProjects(): Promise<WranglerProject[]> {
   const configured = vscode.workspace
-    .getConfiguration("wranglerExplorer")
+    .getConfiguration("explorerForWrangler")
     .get<string[]>("configFiles", ["wrangler.jsonc", "wrangler.json", "wrangler.toml"]);
   const pattern = `**/{${configured.join(",")}}`;
   const uris = await vscode.workspace.findFiles(pattern, EXCLUDE);

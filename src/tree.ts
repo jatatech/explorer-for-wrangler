@@ -1,6 +1,7 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
 import type { AuthService } from "./auth";
+import type { RemoteResourceService } from "./remote";
 import { CATALOG_ACTIONS, CORE_ACTIONS, REMOTE_ACTIONS } from "./commands";
 import { resourceGroups } from "./config";
 import { discoverProjects } from "./discovery";
@@ -24,8 +25,11 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
   private projects: WranglerProject[] = [];
   private readonly auth = new Map<string, AuthStatus>();
   private readonly operations = new Map<string, WranglerOperation>();
+  private readonly remoteGroups = new Map<string, ResourceGroup[]>();
+  private readonly remoteErrors = new Map<string, string[]>();
+  private readonly remoteLoading = new Set<string>();
 
-  constructor(private readonly state: vscode.Memento, private readonly authService: AuthService) {}
+  constructor(private readonly state: vscode.Memento, private readonly authService: AuthService, private readonly remoteService: RemoteResourceService) {}
 
   async refresh(): Promise<void> {
     this.projects = await discoverProjects();
@@ -37,6 +41,8 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
   }
 
   getProjects(): readonly WranglerProject[] { return this.projects; }
+
+  refreshTree(): void { this.changed.fire(); }
 
   findProject(configUri: string): WranglerProject | undefined {
     return this.projects.find((project) => project.configUri.toString() === configUri);
@@ -56,8 +62,32 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
   }
 
   setOperation(operation: WranglerOperation): void {
+    const current = this.operations.get(operation.projectKey);
+    if (current && current.startedAt > operation.startedAt) return;
     this.operations.set(operation.projectKey, operation);
     this.changed.fire();
+  }
+
+  async refreshRemote(project: WranglerProject): Promise<void> {
+    const key = project.configUri.toString();
+    if (this.remoteLoading.has(key)) {
+      void vscode.window.showInformationMessage(`Account resources for ${project.name} are already refreshing.`);
+      return;
+    }
+    this.remoteLoading.add(key);
+    this.changed.fire();
+    try {
+      const discovered = await this.remoteService.discover(project, this.getEnvironment(project));
+      this.remoteGroups.set(key, discovered.groups);
+      this.remoteErrors.set(key, discovered.errors);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.remoteErrors.set(key, [message]);
+      void vscode.window.showErrorMessage(`Could not refresh account resources for ${project.name}: ${message}`);
+    } finally {
+      this.remoteLoading.delete(key);
+      this.changed.fire();
+    }
   }
 
   async refreshAuth(project: WranglerProject): Promise<void> {
@@ -129,14 +159,26 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
         case "account": {
           const status = this.auth.get(node.project.configUri.toString()) ?? { state: "checking" as const, label: "Checking authentication…" };
           const actions = REMOTE_ACTIONS.filter((action) =>
-            (action.command !== "wranglerExplorer.login" || status.state !== "loggedIn") &&
-            (action.command !== "wranglerExplorer.logout" || status.state !== "loggedOut"));
+            (action.command !== "explorerForWrangler.login" || status.state !== "loggedIn") &&
+            (action.command !== "explorerForWrangler.logout" || status.state !== "loggedOut"));
           return [
             { type: "auth", project: node.project, status },
             ...actions.map((action) => ({ type: "action" as const, project: node.project, action }))
           ];
         }
-        case "catalog": return CATALOG_ACTIONS.map((action) => ({ type: "action", project: node.project, action }));
+        case "catalog": {
+          const key = node.project.configUri.toString();
+          if (!this.remoteGroups.has(key) && !this.remoteLoading.has(key) && this.auth.get(key)?.state === "loggedIn") {
+            void this.refreshRemote(node.project);
+          }
+          const refresh: ActionNode = { type: "action", project: node.project, action: {
+            command: "explorerForWrangler.refreshRemote", label: this.remoteLoading.has(key) ? "Refreshing…" : "Refresh Account Resources", icon: this.remoteLoading.has(key) ? "sync~spin" : "refresh", description: "discover resources with Wrangler"
+          } };
+          const groups = (this.remoteGroups.get(key) ?? []).map((group) => ({ type: "group" as const, project: node.project, group }));
+          const errors = this.remoteErrors.get(key) ?? [];
+          if (groups.length > 0) return [refresh, ...groups, ...(errors.length ? [{ type: "message" as const, label: `${errors.length} resource types could not be refreshed`, icon: "warning" }] : [])];
+          return [refresh, ...CATALOG_ACTIONS.map((action) => ({ type: "action" as const, project: node.project, action }))];
+        }
         case "environments": return [
           { type: "environment", project: node.project, environment: undefined },
           ...node.project.environments.map((environment) => ({ type: "environment" as const, project: node.project, environment }))
@@ -193,7 +235,7 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
             : "error"
     );
     item.contextValue = `auth.${node.status.state}`;
-    item.command = { command: "wranglerExplorer.whoami", title: "Show full authentication status", arguments: [node.project] };
+    item.command = { command: "explorerForWrangler.whoami", title: "Show full authentication status", arguments: [node.project] };
     return item;
   }
 
@@ -211,7 +253,7 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
             : "error"
     );
     item.contextValue = "operation";
-    item.command = { command: "wranglerExplorer.showOutput", title: "Show Explorer for Wrangler Output" };
+    item.command = { command: "explorerForWrangler.showOutput", title: "Show Explorer for Wrangler Output" };
     return item;
   }
 
@@ -222,7 +264,7 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
     item.description = active ? "active" : undefined;
     item.iconPath = new vscode.ThemeIcon(active ? "check" : "circle-outline");
     item.command = {
-      command: "wranglerExplorer.selectEnvironment",
+      command: "explorerForWrangler.selectEnvironment",
       title: `Use ${label}`,
       arguments: [node.project, node.environment, true]
     };
@@ -238,17 +280,14 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
 
   private resourceItem(node: ResourceNode): vscode.TreeItem {
     const item = new vscode.TreeItem(node.resource.name);
-    item.description = node.resource.binding === node.resource.name ? undefined : node.resource.binding;
+    const operation = this.operations.get(node.project.configUri.toString());
+    const busy = operation?.state === "running" && operation.command?.split(/\s+/).includes(node.resource.name);
+    item.description = busy ? "running" : node.resource.binding === node.resource.name ? undefined : node.resource.binding;
     item.tooltip = new vscode.MarkdownString(
-      `**${node.resource.name}**\n\nBinding: \`${node.resource.binding}\`${node.resource.id ? `\n\nID: \`${node.resource.id}\`` : ""}`
+      `**${node.resource.name}**\n\n${node.resource.source === "remote" ? "Remote account resource" : `Binding: \`${node.resource.binding}\``}${node.resource.id ? `\n\nID: \`${node.resource.id}\`` : ""}`
     );
-    item.iconPath = new vscode.ThemeIcon(resourceIcon(node.resource.kind));
+    item.iconPath = new vscode.ThemeIcon(busy ? "sync~spin" : resourceIcon(node.resource.kind));
     item.contextValue = `resource.${node.resource.kind}`;
-    if (node.resource.kind === "d1") {
-      item.command = { command: "wranglerExplorer.d1Info", title: "Show database info", arguments: [node] };
-    } else if (node.resource.kind === "r2") {
-      item.command = { command: "wranglerExplorer.r2Info", title: "Show bucket info", arguments: [node] };
-    }
     return item;
   }
 }

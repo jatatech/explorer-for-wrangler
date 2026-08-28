@@ -29,6 +29,8 @@ export interface CloudflareResource {
   binding: string;
   name: string;
   id?: string;
+  source?: "config" | "remote";
+  details?: Record<string, unknown>;
 }
 
 export interface ResourceGroup {
@@ -58,6 +60,7 @@ export interface AuthStatus {
   label: string;
   detail?: string;
   executable?: WranglerExecutable;
+  accounts?: Array<{ id: string; name: string }>;
 }
 
 export interface WranglerOperation {
@@ -67,6 +70,7 @@ export interface WranglerOperation {
   startedAt: number;
   finishedAt?: number;
   detail?: string;
+  command?: string;
 }
 
 export interface WranglerResult {

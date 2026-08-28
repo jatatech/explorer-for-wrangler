@@ -5,12 +5,28 @@ import { withEnvironment } from "./commands";
 import { detectPackageManager, installWranglerCommand } from "./packageManager";
 import type { WranglerExecutable, WranglerProject } from "./model";
 
-export class WranglerRunner {
+export class WranglerRunner implements vscode.Disposable {
+  private readonly runningTaskKeys = new Set<string>();
+  private readonly taskKeys = new Map<vscode.TaskExecution, string>();
+  private readonly taskEndListener = vscode.tasks.onDidEndTaskProcess((event) => {
+    const key = this.taskKeys.get(event.execution);
+    if (!key) return;
+    this.taskKeys.delete(event.execution);
+    this.runningTaskKeys.delete(key);
+  });
+
+  dispose(): void {
+    this.runningTaskKeys.clear();
+    this.taskKeys.clear();
+    this.taskEndListener.dispose();
+  }
+
   async run(project: WranglerProject, args: readonly string[], environment?: string, label?: string): Promise<void> {
     const executable = await this.resolveOrPrompt(project);
     if (!executable) return;
-    const task = this.createTask(project, executable.command, withEnvironment(args, environment), label ?? args.join(" "));
-    await vscode.tasks.executeTask(task);
+    const scopedArgs = withEnvironment(args, environment);
+    const task = this.createTask(project, executable.command, scopedArgs, label ?? args.join(" "));
+    await this.executeUniqueTask(task, taskKey(project.configUri.toString(), scopedArgs), label ?? args.join(" "));
   }
 
   async resolveOrPrompt(project: WranglerProject): Promise<WranglerExecutable | undefined> {
@@ -25,7 +41,7 @@ export class WranglerRunner {
       if (choice === "Install in Project") {
         await this.install(project);
       } else if (choice === "Configure Path") {
-        await vscode.commands.executeCommand("workbench.action.openSettings", "wranglerExplorer.wranglerPath");
+        await vscode.commands.executeCommand("workbench.action.openSettings", "explorerForWrangler.wranglerPath");
       }
       return undefined;
     }
@@ -37,7 +53,7 @@ export class WranglerRunner {
   }
 
   async resolveForFolder(folder: vscode.WorkspaceFolder, cwd = folder.uri): Promise<WranglerExecutable | undefined> {
-    const configuration = vscode.workspace.getConfiguration("wranglerExplorer", cwd);
+    const configuration = vscode.workspace.getConfiguration("explorerForWrangler", cwd);
     const configured = configuration.get<string>("wranglerPath", "").trim();
     if (configured) {
       const expanded = configured.startsWith("~")
@@ -64,7 +80,8 @@ export class WranglerRunner {
   async installInFolder(folder: vscode.WorkspaceFolder, cwd = folder.uri): Promise<void> {
     const detected = detectPackageManager(cwd.fsPath, folder.uri.fsPath);
     const [command, args] = installWranglerCommand(detected.manager);
-    await vscode.tasks.executeTask(this.createFolderTask(folder, vscode.Uri.file(detected.root), command, args, "Install Wrangler"));
+    const task = this.createFolderTask(folder, vscode.Uri.file(detected.root), command, args, "Install Wrangler");
+    await this.executeUniqueTask(task, taskKey(folder.uri.toString(), args), "Install Wrangler");
   }
 
   async runInFolder(folder: vscode.WorkspaceFolder, args: readonly string[], label: string): Promise<void> {
@@ -72,14 +89,31 @@ export class WranglerRunner {
     if (!executable) {
       const choice = await vscode.window.showWarningMessage("Wrangler is not available in this workspace folder.", "Install Locally", "Configure Path");
       if (choice === "Install Locally") await this.installInFolder(folder);
-      if (choice === "Configure Path") await vscode.commands.executeCommand("workbench.action.openSettings", "wranglerExplorer.wranglerPath");
+      if (choice === "Configure Path") await vscode.commands.executeCommand("workbench.action.openSettings", "explorerForWrangler.wranglerPath");
       return;
     }
-    await vscode.tasks.executeTask(this.createFolderTask(folder, folder.uri, executable.command, args, label));
+    const task = this.createFolderTask(folder, folder.uri, executable.command, args, label);
+    await this.executeUniqueTask(task, taskKey(folder.uri.toString(), args), label);
   }
 
-  createExternalTask(folder: vscode.WorkspaceFolder, cwd: vscode.Uri, command: string, args: readonly string[], label: string): vscode.Task {
-    return this.createFolderTask(folder, cwd, command, args, label);
+  async runExternalTask(folder: vscode.WorkspaceFolder, cwd: vscode.Uri, command: string, args: readonly string[], label: string): Promise<void> {
+    const task = this.createFolderTask(folder, cwd, command, args, label);
+    await this.executeUniqueTask(task, taskKey(cwd.toString(), args), label);
+  }
+
+  private async executeUniqueTask(task: vscode.Task, key: string, label: string): Promise<void> {
+    if (this.runningTaskKeys.has(key)) {
+      void vscode.window.showInformationMessage(`${label} is already running.`);
+      return;
+    }
+    this.runningTaskKeys.add(key);
+    try {
+      const execution = await vscode.tasks.executeTask(task);
+      this.taskKeys.set(execution, key);
+    } catch (error) {
+      this.runningTaskKeys.delete(key);
+      throw error;
+    }
   }
 
   private createTask(project: WranglerProject, command: string, args: readonly string[], label: string): vscode.Task {
@@ -103,7 +137,7 @@ export class WranglerRunner {
       execution
     );
     const revealSetting = vscode.workspace
-      .getConfiguration("wranglerExplorer")
+      .getConfiguration("explorerForWrangler")
       .get<"always" | "silent" | "never">("revealTaskTerminal", "always");
     task.presentationOptions = {
       reveal: revealSetting === "always"
@@ -117,6 +151,10 @@ export class WranglerRunner {
     };
     return task;
   }
+}
+
+function taskKey(scope: string, args: readonly string[]): string {
+  return JSON.stringify([scope, ...args]);
 }
 
 function findLocalWrangler(start: string, boundary: string): string | undefined {

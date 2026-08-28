@@ -8,11 +8,11 @@ export class SetupService {
   constructor(private readonly runner: WranglerRunner) {}
 
   async refreshContext(hasProjects: boolean): Promise<void> {
-    await vscode.commands.executeCommand("setContext", "wranglerExplorer.hasProjects", hasProjects);
+    await vscode.commands.executeCommand("setContext", "explorerForWrangler.hasProjects", hasProjects);
     const folders = vscode.workspace.workspaceFolders ?? [];
-    await vscode.commands.executeCommand("setContext", "wranglerExplorer.hasWorkspaceFolders", folders.length > 0);
+    await vscode.commands.executeCommand("setContext", "explorerForWrangler.hasWorkspaceFolders", folders.length > 0);
     const available = !hasProjects && (await Promise.all(folders.map((folder) => this.runner.resolveForFolder(folder)))).some(Boolean);
-    await vscode.commands.executeCommand("setContext", "wranglerExplorer.hasWrangler", available);
+    await vscode.commands.executeCommand("setContext", "explorerForWrangler.hasWrangler", available);
   }
 
   async installLocal(): Promise<void> {
@@ -21,7 +21,7 @@ export class SetupService {
   }
 
   async configureExecutable(): Promise<void> {
-    await vscode.commands.executeCommand("workbench.action.openSettings", "wranglerExplorer.wranglerPath");
+    await vscode.commands.executeCommand("workbench.action.openSettings", "explorerForWrangler.wranglerPath");
   }
 
   async createProject(): Promise<void> {
@@ -36,7 +36,7 @@ export class SetupService {
     if (!name) return;
     const { manager } = detectPackageManager(folder.uri.fsPath);
     const [command, args] = createCloudflareCommand(manager, name);
-    await vscode.tasks.executeTask(this.runner.createExternalTask(folder, folder.uri, command, args, "Create Cloudflare Project"));
+    await this.runner.runExternalTask(folder, folder.uri, command, args, "Create Cloudflare Project");
   }
 
   async initializeHere(): Promise<void> {
@@ -122,7 +122,7 @@ export class SetupService {
     );
     if (confirmed) {
       const cwd = vscode.Uri.file(packageRoot);
-      await vscode.tasks.executeTask(this.runner.createExternalTask(project.workspaceFolder, cwd, command, args, "Update Wrangler"));
+      await this.runner.runExternalTask(project.workspaceFolder, cwd, command, args, "Update Wrangler");
     }
   }
 }

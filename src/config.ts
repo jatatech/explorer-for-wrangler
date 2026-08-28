@@ -43,6 +43,11 @@ export function configForEnvironment(config: WranglerConfig, environment?: strin
   return { ...config, ...selected, env: config.env };
 }
 
+export function workerName(config: WranglerConfig, environment?: string): string | undefined {
+  const scoped = configForEnvironment(config, environment);
+  return text(scoped.name);
+}
+
 function resource(
   kind: ResourceKind,
   entry: WranglerConfig,
