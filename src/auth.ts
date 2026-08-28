@@ -1,11 +1,12 @@
 import { spawn } from "node:child_process";
 import type { AuthStatus, WranglerExecutable, WranglerProject } from "./model";
 import type { WranglerRunner } from "./runner";
+import { isNewerVersion, normalizeWranglerVersion, type WranglerVersionService } from "./version";
 
 const ANSI = new RegExp(`${String.fromCharCode(27)}\\[[0-?]*[ -/]*[@-~]`, "g");
 
 export class AuthService {
-  constructor(private readonly runner: WranglerRunner) {}
+  constructor(private readonly runner: WranglerRunner, private readonly versions: WranglerVersionService) {}
 
   async check(project: WranglerProject): Promise<AuthStatus> {
     const executable = await this.runner.resolve(project);
@@ -13,12 +14,15 @@ export class AuthService {
       return { state: "unavailable", label: "Wrangler not found", detail: "Install Wrangler locally or configure a system executable." };
     }
 
-    const version = await capture(executable.command, ["--version"], project.rootUri.fsPath);
+    const [version, result] = await Promise.all([
+      capture(executable.command, ["--version"], project.rootUri.fsPath),
+      capture(executable.command, ["whoami", "--json"], project.rootUri.fsPath, 15_000)
+    ]);
+    const currentVersion = normalizeWranglerVersion(version.output);
     const resolved: WranglerExecutable = {
       ...executable,
-      version: firstMeaningfulLine(version.output)
+      version: currentVersion
     };
-    const result = await capture(executable.command, ["whoami", "--json"], project.rootUri.fsPath, 15_000);
     const output = result.output.replace(ANSI, "").trim();
     if (result.timedOut) {
       return { state: "error", label: "Authentication check timed out", detail: sourceDetail(resolved), executable: resolved };
@@ -44,6 +48,20 @@ export class AuthService {
       label: "Could not check authentication",
       detail: `${sourceDetail(resolved)}${output ? ` — ${firstMeaningfulLine(output)}` : ""}`,
       executable: resolved
+    };
+  }
+
+  async withLatestVersion(status: AuthStatus): Promise<AuthStatus> {
+    const currentVersion = status.executable?.version;
+    if (!status.executable || !currentVersion) return status;
+    const latestVersion = await this.versions.latest();
+    return {
+      ...status,
+      executable: {
+        ...status.executable,
+        latestVersion,
+        updateAvailable: Boolean(latestVersion && isNewerVersion(currentVersion, latestVersion))
+      }
     };
   }
 }

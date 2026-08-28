@@ -2,12 +2,12 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import type { AuthService } from "./auth";
 import type { RemoteResourceService } from "./remote";
-import { CATALOG_ACTIONS, DEPLOYED_WORKER_ACTIONS, PROJECT_ACTIONS, WRANGLER_ACTIONS } from "./commands";
+import { CATALOG_ACTIONS, DEPLOYED_WORKER_ACTIONS, INSTALL_PROJECT_WRANGLER_ACTION, PROJECT_ACTIONS, UPDATE_WRANGLER_ACTION, WRANGLER_ACTIONS } from "./commands";
 import { resourceGroups } from "./config";
 import { discoverProjects } from "./discovery";
-import type { AuthStatus, CloudflareResource, ProjectAction, ResourceGroup, WranglerOperation, WranglerProject } from "./model";
+import type { AuthStatus, CloudflareResource, ProjectAction, ResourceGroup, WranglerExecutable, WranglerOperation, WranglerProject } from "./model";
 
-type Node = ProjectNode | SectionNode | ActionNode | AuthNode | OperationNode | EnvironmentNode | GroupNode | ResourceNode | MessageNode;
+type Node = ProjectNode | SectionNode | ActionNode | AuthNode | InstallationNode | UpdateInfoNode | OperationNode | EnvironmentNode | GroupNode | ResourceNode | MessageNode;
 type AccountNode = AccountProjectNode | ActionNode | GroupNode | ResourceNode | MessageNode;
 
 interface ProjectNode { type: "project"; project: WranglerProject }
@@ -15,6 +15,8 @@ interface AccountProjectNode { type: "accountProject"; project: WranglerProject 
 interface SectionNode { type: "section"; project: WranglerProject; section: "actions" | "environments" | "resources" | "worker" | "wrangler" }
 interface ActionNode { type: "action"; project: WranglerProject; action: ProjectAction }
 interface AuthNode { type: "auth"; project: WranglerProject; status: AuthStatus }
+interface InstallationNode { type: "installation"; executable?: WranglerExecutable }
+interface UpdateInfoNode { type: "updateInfo"; executable: WranglerExecutable }
 interface OperationNode { type: "operation"; project: WranglerProject; operation: WranglerOperation }
 interface EnvironmentNode { type: "environment"; project: WranglerProject; environment?: string }
 interface GroupNode { type: "group"; project: WranglerProject; group: ResourceGroup }
@@ -68,10 +70,15 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
   }
 
   async refreshAuth(project: WranglerProject): Promise<void> {
-    this.auth.set(project.configUri.toString(), { state: "checking", label: "Checking authentication…" });
+    const key = project.configUri.toString();
+    this.auth.set(key, { state: "checking", label: "Checking authentication…" });
     this.changed.fire();
     const status = await this.authService.check(project);
-    this.auth.set(project.configUri.toString(), status);
+    this.auth.set(key, status);
+    this.changed.fire();
+    const versionStatus = await this.authService.withLatestVersion(status);
+    if (this.auth.get(key) !== status) return;
+    this.auth.set(key, versionStatus);
     this.changed.fire();
   }
 
@@ -90,6 +97,8 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
       case "section": return this.sectionItem(node);
       case "action": return this.actionItem(node);
       case "auth": return this.authItem(node);
+      case "installation": return this.installationItem(node);
+      case "updateInfo": return this.updateInfoItem(node);
       case "operation": return this.operationItem(node);
       case "environment": return this.environmentItem(node);
       case "group": return this.groupItem(node);
@@ -140,10 +149,24 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
           const actions = WRANGLER_ACTIONS.filter((action) =>
             (action.command !== "explorerForWrangler.login" || status.state !== "loggedIn") &&
             (action.command !== "explorerForWrangler.logout" || status.state !== "loggedOut"));
-          return [
+          const nodes: Node[] = [
+            { type: "installation", executable: status.executable },
             { type: "auth", project: node.project, status },
-            ...actions.map((action) => ({ type: "action" as const, project: node.project, action }))
           ];
+          const executable = status.executable;
+          if (executable?.updateAvailable) {
+            nodes.push(executable.source === "local"
+              ? { type: "action", project: node.project, action: {
+                ...UPDATE_WRANGLER_ACTION,
+                description: `${executable.version} → ${executable.latestVersion}`
+              } }
+              : { type: "updateInfo", executable });
+          }
+          if (executable?.source === "system") {
+            nodes.push({ type: "action", project: node.project, action: INSTALL_PROJECT_WRANGLER_ACTION });
+          }
+          nodes.push(...actions.map((action) => ({ type: "action" as const, project: node.project, action })));
+          return nodes;
         }
         case "environments": return [
           { type: "environment", project: node.project, environment: undefined },
@@ -167,7 +190,10 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
       `**${node.project.name}**\n\nConfig: \`${path.basename(node.project.configUri.fsPath)}\`\n\nEnvironment: ${environment ?? "top level"}`
     );
     item.iconPath = new vscode.ThemeIcon(node.project.parseError ? "error" : "cloud");
-    item.contextValue = "project";
+    const executable = this.auth.get(node.project.configUri.toString())?.executable;
+    item.contextValue = executable?.source === "local" && executable.updateAvailable
+      ? "project.updateAvailable"
+      : "project";
     return item;
   }
 
@@ -179,6 +205,15 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
       : vscode.TreeItemCollapsibleState.Expanded;
     const item = new vscode.TreeItem(labels[node.section], collapsibleState);
     item.iconPath = new vscode.ThemeIcon(icons[node.section]);
+    if (node.section === "wrangler") {
+      const executable = this.auth.get(node.project.configUri.toString())?.executable;
+      if (executable?.version) {
+        item.description = `v${executable.version}${executable.updateAvailable ? " · update available" : ""}`;
+        item.tooltip = executable.updateAvailable && executable.latestVersion
+          ? `Wrangler ${executable.version}; ${executable.latestVersion} is available.`
+          : `Wrangler ${executable.version}`;
+      }
+    }
     return item;
   }
 
@@ -205,6 +240,42 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
     );
     item.contextValue = `auth.${node.status.state}`;
     item.command = { command: "explorerForWrangler.whoami", title: "Show full authentication status", arguments: [node.project] };
+    return item;
+  }
+
+  private installationItem(node: InstallationNode): vscode.TreeItem {
+    const executable = node.executable;
+    const label = executable?.source === "local"
+      ? "Project-local Wrangler"
+      : executable?.source === "system"
+        ? "System-wide Wrangler"
+        : executable?.source === "configured"
+          ? "Configured Wrangler"
+          : "Checking Wrangler installation…";
+    const item = new vscode.TreeItem(label);
+    item.description = executable?.source === "local"
+      ? "project dependency"
+      : executable?.source === "system"
+        ? "system PATH"
+        : executable?.source === "configured"
+          ? "custom executable"
+          : undefined;
+    item.tooltip = executable
+      ? `${label}${executable.version ? ` ${executable.version}` : ""}\n${executable.command}`
+      : "Resolving the active Wrangler executable.";
+    item.iconPath = new vscode.ThemeIcon(
+      executable?.source === "local" ? "package" : executable?.source === "system" ? "device-desktop" : executable?.source === "configured" ? "settings-gear" : "sync~spin"
+    );
+    return item;
+  }
+
+  private updateInfoItem(node: UpdateInfoNode): vscode.TreeItem {
+    const item = new vscode.TreeItem("Update available");
+    item.description = node.executable.latestVersion
+      ? `v${node.executable.latestVersion} · externally managed`
+      : "externally managed";
+    item.tooltip = `A newer Wrangler version is available. This ${node.executable.source === "system" ? "system-wide" : "configured"} installation is externally managed; update it using the tool that installed it.`;
+    item.iconPath = new vscode.ThemeIcon("cloud-download");
     return item;
   }
 

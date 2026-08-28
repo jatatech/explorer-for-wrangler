@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.0
+
+- Added Wrangler installation source and active version details to the project tree
+- Added cached update-availability checks, conditional local updates, externally managed update notices, and project-local installation for system Wrangler users
+
 ## 0.6.0
 
 - Reorganized project trees into Environment, Project Actions, Configured Bindings, Deployed Worker, and Wrangler sections

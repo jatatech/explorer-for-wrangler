@@ -23,9 +23,16 @@ export const DEPLOYED_WORKER_ACTIONS = [
 export const WRANGLER_ACTIONS = [
   { command: "explorerForWrangler.login", label: "Log In", icon: "sign-in", description: "open Wrangler's Cloudflare login flow" },
   { command: "explorerForWrangler.logout", label: "Log Out", icon: "sign-out", description: "remove Wrangler's active login" },
-  { command: "explorerForWrangler.whoami", label: "Who Am I?", icon: "account", description: "show full Wrangler account details" },
-  { command: "explorerForWrangler.updateWrangler", label: "Update Wrangler", icon: "cloud-download", description: "update a project-local installation" }
+  { command: "explorerForWrangler.whoami", label: "Who Am I?", icon: "account", description: "show full Wrangler account details" }
 ] as const;
+
+export const UPDATE_WRANGLER_ACTION = {
+  command: "explorerForWrangler.updateWrangler", label: "Update Wrangler", icon: "cloud-download", description: "update the project-local installation"
+} as const;
+
+export const INSTALL_PROJECT_WRANGLER_ACTION = {
+  command: "explorerForWrangler.install", label: "Install Wrangler in Project", icon: "package", description: "add a project-local dev dependency"
+} as const;
 
 export const CATALOG_ACTIONS = [
   { command: "explorerForWrangler.listD1", label: "D1 Databases", icon: "database", description: "list account databases" },

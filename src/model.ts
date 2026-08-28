@@ -54,6 +54,8 @@ export interface WranglerExecutable {
   command: string;
   source: WranglerSource;
   version?: string;
+  latestVersion?: string;
+  updateAvailable?: boolean;
 }
 
 export interface AuthStatus {

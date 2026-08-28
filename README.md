@@ -10,6 +10,8 @@ Explorer for Wrangler puts common workflows for Wrangler, the Cloudflare® Devel
 - Explicit top-level, staging, production, or custom environment selection
 - Live authentication status from `wrangler whoami`, plus login and confirmed logout actions
 - Project-local, explicitly configured, and system-wide Wrangler resolution
+- Wrangler installation-source and version display, with cached update-availability checks
+- Conditional project-local updates and an option to install Wrangler in the project when the active executable is system-wide
 - Buttons for `dev`, `deploy`, deploy dry-run, `tail`, `types`, and startup checks
 - Project actions, configured bindings, deployed Worker state, and Wrangler tooling grouped by their actual scope
 - Authentication status, version listing, secret-name listing, and interactive secret creation

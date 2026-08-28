@@ -10,6 +10,7 @@ import { AccountResourcesTreeProvider, WranglerTreeProvider, type ResourceNode }
 import type { WranglerOperation, WranglerProject } from "./model";
 import { parseJsonOutput, rowsFromOutput } from "./structured";
 import { workerName } from "./config";
+import { WranglerVersionService } from "./version";
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const runner = new WranglerRunner();
@@ -18,7 +19,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const diagnostics = vscode.languages.createDiagnosticCollection("wrangler");
   const operations = new WranglerOperations(runner, output, diagnostics);
   const remote = new RemoteResourceService(operations);
-  const provider = new WranglerTreeProvider(context.workspaceState, new AuthService(runner));
+  const versions = new WranglerVersionService(context.globalState);
+  const provider = new WranglerTreeProvider(context.workspaceState, new AuthService(runner, versions));
   const accountProvider = new AccountResourcesTreeProvider(provider, remote);
   const view = vscode.window.createTreeView("explorerForWrangler.projects", { treeDataProvider: provider, showCollapseAll: true });
   const accountView = vscode.window.createTreeView("explorerForWrangler.accountResources", { treeDataProvider: accountProvider, showCollapseAll: true });
@@ -89,7 +91,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       { label: "$(file-code) Open Wrangler Configuration", command: "explorerForWrangler.openConfig" },
       { label: "$(link-external) Open Cloudflare Dashboard", command: "explorerForWrangler.openDashboard" },
       { label: "$(refresh) Refresh Authentication", description: auth?.label, command: "explorerForWrangler.refreshAuth" },
-      { label: "$(cloud-download) Update Wrangler", command: "explorerForWrangler.updateWrangler" },
+      ...(auth?.executable?.source === "local" && auth.executable.updateAvailable
+        ? [{ label: "$(cloud-download) Update Wrangler", description: `${auth.executable.version} → ${auth.executable.latestVersion}`, command: "explorerForWrangler.updateWrangler" }]
+        : []),
+      ...(auth?.executable?.source === "system"
+        ? [{ label: "$(package) Install Wrangler in Project", description: "add a project-local dev dependency", command: "explorerForWrangler.install" }]
+        : []),
       auth?.state === "loggedIn"
         ? { label: "$(sign-out) Log Out", command: "explorerForWrangler.logout" }
         : { label: "$(sign-in) Log In", command: "explorerForWrangler.login" },

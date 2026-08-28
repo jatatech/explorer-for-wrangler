@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEPLOYED_WORKER_ACTIONS, PROJECT_ACTIONS, withEnvironment, WRANGLER_ACTIONS } from "../src/commands";
+import { DEPLOYED_WORKER_ACTIONS, INSTALL_PROJECT_WRANGLER_ACTION, PROJECT_ACTIONS, UPDATE_WRANGLER_ACTION, withEnvironment, WRANGLER_ACTIONS } from "../src/commands";
 
 describe("Wrangler command arguments", () => {
   it("does not add an environment for top-level config", () => {
@@ -19,7 +19,9 @@ describe("Wrangler command arguments", () => {
       "Open Cloudflare Dashboard", "Deployment Status", "Deployments", "Versions", "Secrets", "Add Secret"
     ]);
     expect(WRANGLER_ACTIONS.map((action) => action.label)).toEqual([
-      "Log In", "Log Out", "Who Am I?", "Update Wrangler"
+      "Log In", "Log Out", "Who Am I?"
     ]);
+    expect(UPDATE_WRANGLER_ACTION.label).toBe("Update Wrangler");
+    expect(INSTALL_PROJECT_WRANGLER_ACTION.label).toBe("Install Wrangler in Project");
   });
 });

@@ -2,7 +2,7 @@
   "name": "explorer-for-wrangler",
   "displayName": "Explorer for Wrangler",
   "description": "Run Wrangler and explore Cloudflare Worker resources from the VS Code Activity Bar.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "publisher": "explorer-for-wrangler",
   "license": "MIT",
   "repository": {
@@ -400,17 +400,17 @@
       "view/item/context": [
         {
           "command": "explorerForWrangler.openConfig",
-          "when": "view == explorerForWrangler.projects && viewItem == project",
+          "when": "view == explorerForWrangler.projects && viewItem =~ /^project/",
           "group": "navigation@1"
         },
         {
           "command": "explorerForWrangler.selectEnvironment",
-          "when": "view == explorerForWrangler.projects && viewItem == project",
+          "when": "view == explorerForWrangler.projects && viewItem =~ /^project/",
           "group": "navigation@2"
         },
         {
           "command": "explorerForWrangler.updateWrangler",
-          "when": "view == explorerForWrangler.projects && viewItem == project",
+          "when": "view == explorerForWrangler.projects && viewItem == project.updateAvailable",
           "group": "navigation@3"
         },
         {
