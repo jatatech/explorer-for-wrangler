@@ -86,26 +86,6 @@ Explorer for Wrangler chooses its output surface according to the operation:
 - Parseable Wrangler errors and warnings are surfaced in VS Code's Problems view.
 - The Status Bar follows the active editor's nearest Wrangler project and opens a quick-action menu.
 
-## Development
-
-```sh
-npm install
-npm run check-types
-npm test
-npm run lint
-npm run package
-```
-
-The Marketplace PNG and status-bar icon font are generated from `media/explorer-for-wrangler.svg` during compilation. Packaged VSIX files are written to `build/`.
-
-Press `F5` in VS Code to launch an Extension Development Host.
-
-The Activity Bar SVG is also the source for the custom status-bar and Marketplace icons. Compile, watch, test, and package commands regenerate `media/explorer-for-wrangler.woff` and `media/explorer-for-wrangler.png` automatically.
-
-## Releases
-
-Create an annotated version tag matching `package.json`, for example `v1.0.0`, and push it to GitHub. The release workflow validates the extension, builds the VSIX, creates a GitHub Release, and attaches the package. Marketplace publishing remains a separate, deliberate step.
-
 ## Storage browser notes
 
 Wrangler provides remote KV key listing, so the KV browser can enumerate and inspect keys. Wrangler currently has no R2 object-list subcommand; the R2 panel therefore navigates known object keys and supports inspection, download, upload, and confirmed deletion without reading Cloudflare credentials directly.
