@@ -11,6 +11,16 @@ export const PROJECT_ACTIONS = [
   { command: "explorerForWrangler.checkStartup", label: "Check Startup", icon: "dashboard", description: "profile Worker startup" }
 ] as const;
 
+export const D1_MIGRATION_ACTIONS = [
+  { command: "explorerForWrangler.d1CreateMigration", label: "Create Migration", icon: "new-file", description: "create a versioned SQL migration" },
+  { command: "explorerForWrangler.d1ListLocal", label: "Pending — Local", icon: "list-unordered", description: "inspect unapplied local migrations" },
+  { command: "explorerForWrangler.d1ApplyLocal", label: "Apply — Local", icon: "play", description: "apply pending migrations locally" },
+  { command: "explorerForWrangler.d1ListPreview", label: "Pending — Preview", icon: "list-unordered", description: "inspect unapplied preview migrations" },
+  { command: "explorerForWrangler.d1ApplyPreview", label: "Apply — Preview", icon: "play", description: "apply pending migrations to preview" },
+  { command: "explorerForWrangler.d1ListRemote", label: "Pending — Remote", icon: "list-unordered", description: "inspect unapplied remote migrations" },
+  { command: "explorerForWrangler.d1ApplyRemote", label: "Apply — Remote", icon: "cloud-upload", description: "apply pending migrations to production" }
+] as const;
+
 export const DEPLOYED_WORKER_ACTIONS = [
   { command: "explorerForWrangler.openDashboard", label: "Open Cloudflare Dashboard", icon: "link-external", description: "open this Worker in the dashboard" },
   { command: "explorerForWrangler.deploymentStatus", label: "Deployment Status", icon: "pulse", description: "current production state" },

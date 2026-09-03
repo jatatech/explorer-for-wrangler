@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEPLOYED_WORKER_ACTIONS, INSTALL_PROJECT_WRANGLER_ACTION, PROJECT_ACTIONS, UPDATE_WRANGLER_ACTION, withEnvironment, WRANGLER_ACTIONS } from "../src/commands";
+import { D1_MIGRATION_ACTIONS, DEPLOYED_WORKER_ACTIONS, INSTALL_PROJECT_WRANGLER_ACTION, PROJECT_ACTIONS, UPDATE_WRANGLER_ACTION, withEnvironment, WRANGLER_ACTIONS } from "../src/commands";
 
 describe("Wrangler command arguments", () => {
   it("does not add an environment for top-level config", () => {
@@ -23,5 +23,17 @@ describe("Wrangler command arguments", () => {
     ]);
     expect(UPDATE_WRANGLER_ACTION.label).toBe("Update Wrangler");
     expect(INSTALL_PROJECT_WRANGLER_ACTION.label).toBe("Install Wrangler in Project");
+  });
+
+  it("offers visible D1 migration actions for every target", () => {
+    expect(D1_MIGRATION_ACTIONS.map((action) => action.label)).toEqual([
+      "Create Migration",
+      "Pending — Local",
+      "Apply — Local",
+      "Pending — Preview",
+      "Apply — Preview",
+      "Pending — Remote",
+      "Apply — Remote"
+    ]);
   });
 });

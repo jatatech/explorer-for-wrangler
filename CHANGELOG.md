@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0
+
+- Made configured D1 databases expandable with visible migration creation, pending-migration inspection, and Local, Preview, and Remote apply actions
+- Added a pending-migration preflight and target-aware confirmation before applying D1 migrations
+
 ## 1.0.0
 
 - First stable public release of Explorer for Wrangler

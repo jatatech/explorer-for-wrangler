@@ -7,7 +7,7 @@ import { WranglerRunner } from "./runner";
 import { SetupService } from "./setup";
 import { WranglerStatusBar } from "./statusBar";
 import { AccountResourcesTreeProvider, WranglerTreeProvider, type ResourceNode } from "./tree";
-import type { WranglerOperation, WranglerProject } from "./model";
+import type { WranglerOperation, WranglerProject, WranglerResult } from "./model";
 import { parseJsonOutput, rowsFromOutput } from "./structured";
 import { workerName } from "./config";
 import { WranglerVersionService } from "./version";
@@ -271,16 +271,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     const name = await vscode.window.showInputBox({ title: "Create D1 migration", prompt: "Migration name", validateInput: validateMigrationName });
     if (name) await operations.run(node.project, ["d1", "migrations", "create", node.resource.name, name], `Create D1 Migration: ${name}`, { environment: provider.getEnvironment(node.project) });
   });
+  register("explorerForWrangler.d1ListLocal", (node: ResourceNode) =>
+    showD1PendingMigrations(node, "local", operations, provider.getEnvironment(node.project)));
+  register("explorerForWrangler.d1ListPreview", (node: ResourceNode) =>
+    showD1PendingMigrations(node, "preview", operations, provider.getEnvironment(node.project)));
+  register("explorerForWrangler.d1ListRemote", (node: ResourceNode) =>
+    showD1PendingMigrations(node, "remote", operations, provider.getEnvironment(node.project)));
   register("explorerForWrangler.d1ApplyLocal", (node: ResourceNode) =>
-    operations.run(node.project, ["d1", "migrations", "apply", node.resource.name, "--local"], `Apply D1 Locally: ${node.resource.name}`, { environment: provider.getEnvironment(node.project), progress: true }));
-  register("explorerForWrangler.d1ApplyRemote", async (node: ResourceNode) => {
-    const confirmed = await vscode.window.showWarningMessage(
-      `Apply pending migrations to remote D1 database “${node.resource.name}”?`,
-      { modal: true },
-      "Apply migrations"
-    );
-    if (confirmed) await operations.run(node.project, ["d1", "migrations", "apply", node.resource.name, "--remote"], `Apply D1 Remotely: ${node.resource.name}`, { environment: provider.getEnvironment(node.project), progress: true });
-  });
+    applyD1Migrations(node, "local", operations, provider.getEnvironment(node.project)));
+  register("explorerForWrangler.d1ApplyPreview", (node: ResourceNode) =>
+    applyD1Migrations(node, "preview", operations, provider.getEnvironment(node.project)));
+  register("explorerForWrangler.d1ApplyRemote", (node: ResourceNode) =>
+    applyD1Migrations(node, "remote", operations, provider.getEnvironment(node.project)));
   register("explorerForWrangler.r2Info", (node: ResourceNode) =>
     vscode.commands.executeCommand("explorerForWrangler.resourceDetails", node));
   register("explorerForWrangler.kvBrowse", (node: ResourceNode) => StorageBrowser.showKv(node.project, node.resource, operations, provider.getEnvironment(node.project)));
@@ -426,6 +428,88 @@ function resourcePanelKey(node: ResourceNode): string {
 async function showResourceCollection(node: ResourceNode, operations: WranglerOperations, args: string[], environment?: string): Promise<void> {
   const result = await operations.run(node.project, args, `${node.resource.name} Items`, { environment, progress: true, notifySuccess: false });
   if (result?.code === 0) showStructuredDetail(node.resource.name, rowsFromOutput(result.stdout));
+}
+
+type D1MigrationTarget = "local" | "preview" | "remote";
+
+async function showD1PendingMigrations(
+  node: ResourceNode,
+  target: D1MigrationTarget,
+  operations: WranglerOperations,
+  environment?: string
+): Promise<void> {
+  const inspected = await inspectD1PendingMigrations(node, target, operations, environment);
+  if (!inspected || inspected.result.code !== 0) return;
+  const title = `Pending D1 Migrations — ${migrationTargetLabel(target)} — ${node.resource.name}`;
+  const value = inspected.rows.length > 0
+    ? inspected.rows
+    : { status: noPendingMigrations(inspected.result) ? "No pending migrations" : inspected.result.stdout.trim() || "No output returned" };
+  showStructuredDetail(title, value, [], `${resourcePanelKey(node)}:migrations:${target}`);
+}
+
+async function applyD1Migrations(
+  node: ResourceNode,
+  target: D1MigrationTarget,
+  operations: WranglerOperations,
+  environment?: string
+): Promise<void> {
+  const inspected = await inspectD1PendingMigrations(node, target, operations, environment);
+  if (!inspected || inspected.result.code !== 0) return;
+  if (noPendingMigrations(inspected.result)) {
+    await vscode.window.showInformationMessage(`No pending ${migrationTargetLabel(target).toLowerCase()} migrations for D1 database “${node.resource.name}”.`);
+    return;
+  }
+
+  const environmentLabel = environment ? `environment “${environment}”` : "the top-level environment";
+  const summary = migrationSummary(inspected.rows);
+  const message = `Apply ${summary} to the ${migrationTargetLabel(target).toLowerCase()} D1 database “${node.resource.name}” using ${environmentLabel}?`;
+  const confirm = target === "local"
+    ? vscode.window.showInformationMessage(message, { modal: true }, "Apply migrations")
+    : vscode.window.showWarningMessage(message, { modal: true }, "Apply migrations");
+  if (await confirm !== "Apply migrations") return;
+
+  await operations.run(
+    node.project,
+    ["d1", "migrations", "apply", node.resource.name, `--${target}`],
+    `Apply D1 ${migrationTargetLabel(target)}: ${node.resource.name}`,
+    { environment, progress: true }
+  );
+}
+
+async function inspectD1PendingMigrations(
+  node: ResourceNode,
+  target: D1MigrationTarget,
+  operations: WranglerOperations,
+  environment?: string
+): Promise<{ result: WranglerResult; rows: Record<string, unknown>[] } | undefined> {
+  const result = await operations.run(
+    node.project,
+    ["d1", "migrations", "list", node.resource.name, `--${target}`],
+    `Check D1 ${migrationTargetLabel(target)} Migrations: ${node.resource.name}`,
+    { environment, progress: true, notifySuccess: false }
+  );
+  return result ? { result, rows: rowsFromOutput(result.stdout) } : undefined;
+}
+
+function noPendingMigrations(result: WranglerResult): boolean {
+  const output = `${result.stdout}\n${result.stderr}`.trim();
+  return output.length === 0 || /no (?:pending |unapplied )?migrations(?: to (?:apply|be applied))?/i.test(output);
+}
+
+function migrationSummary(rows: Record<string, unknown>[]): string {
+  const names = rows.flatMap((row) => {
+    for (const key of ["name", "migration", "filename", "file"]) {
+      if (typeof row[key] === "string" && row[key]) return [row[key] as string];
+    }
+    return [];
+  });
+  if (names.length === 0) return "the pending migrations reported by Wrangler";
+  const shown = names.slice(0, 4).map((name) => `“${name}”`).join(", ");
+  return names.length > 4 ? `${names.length} pending migrations (${shown}, and ${names.length - 4} more)` : `${names.length} pending migration${names.length === 1 ? "" : "s"} (${shown})`;
+}
+
+function migrationTargetLabel(target: D1MigrationTarget): string {
+  return target[0]!.toUpperCase() + target.slice(1);
 }
 
 async function confirmedAction(node: ResourceNode, operations: WranglerOperations, args: string[], prompt: string, confirmation: string, environment?: string): Promise<void> {

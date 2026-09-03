@@ -2,18 +2,20 @@ import * as path from "node:path";
 import * as vscode from "vscode";
 import type { AuthService } from "./auth";
 import type { RemoteResourceService } from "./remote";
-import { CATALOG_ACTIONS, DEPLOYED_WORKER_ACTIONS, INSTALL_PROJECT_WRANGLER_ACTION, PROJECT_ACTIONS, UPDATE_WRANGLER_ACTION, WRANGLER_ACTIONS } from "./commands";
+import { CATALOG_ACTIONS, D1_MIGRATION_ACTIONS, DEPLOYED_WORKER_ACTIONS, INSTALL_PROJECT_WRANGLER_ACTION, PROJECT_ACTIONS, UPDATE_WRANGLER_ACTION, WRANGLER_ACTIONS } from "./commands";
 import { resourceGroups } from "./config";
 import { discoverProjects } from "./discovery";
 import type { AuthStatus, CloudflareResource, ProjectAction, ResourceGroup, WranglerExecutable, WranglerOperation, WranglerProject } from "./model";
 
-type Node = ProjectNode | SectionNode | ActionNode | AuthNode | InstallationNode | UpdateInfoNode | OperationNode | EnvironmentNode | GroupNode | ResourceNode | MessageNode;
+type Node = ProjectNode | SectionNode | ActionNode | ResourceActionNode | D1MigrationsNode | AuthNode | InstallationNode | UpdateInfoNode | OperationNode | EnvironmentNode | GroupNode | ResourceNode | MessageNode;
 type AccountNode = AccountProjectNode | ActionNode | GroupNode | ResourceNode | MessageNode;
 
 interface ProjectNode { type: "project"; project: WranglerProject }
 interface AccountProjectNode { type: "accountProject"; project: WranglerProject }
 interface SectionNode { type: "section"; project: WranglerProject; section: "actions" | "environments" | "resources" | "worker" | "wrangler" }
 interface ActionNode { type: "action"; project: WranglerProject; action: ProjectAction }
+interface ResourceActionNode { type: "resourceAction"; project: WranglerProject; resource: CloudflareResource; action: ProjectAction }
+interface D1MigrationsNode { type: "d1Migrations"; project: WranglerProject; resource: CloudflareResource }
 interface AuthNode { type: "auth"; project: WranglerProject; status: AuthStatus }
 interface InstallationNode { type: "installation"; executable?: WranglerExecutable }
 interface UpdateInfoNode { type: "updateInfo"; executable: WranglerExecutable }
@@ -96,6 +98,8 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
       case "project": return this.projectItem(node);
       case "section": return this.sectionItem(node);
       case "action": return this.actionItem(node);
+      case "resourceAction": return this.resourceActionItem(node);
+      case "d1Migrations": return this.d1MigrationsItem(node);
       case "auth": return this.authItem(node);
       case "installation": return this.installationItem(node);
       case "updateInfo": return this.updateInfoItem(node);
@@ -179,6 +183,12 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
     if (node.type === "group") {
       return node.group.resources.map((resource) => ({ type: "resource", project: node.project, resource }));
     }
+    if (node.type === "resource" && node.resource.kind === "d1") {
+      return [{ type: "d1Migrations", project: node.project, resource: node.resource }];
+    }
+    if (node.type === "d1Migrations") {
+      return D1_MIGRATION_ACTIONS.map((action) => ({ type: "resourceAction", project: node.project, resource: node.resource, action }));
+    }
     return [];
   }
 
@@ -222,6 +232,23 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
     item.description = node.action.description;
     item.iconPath = new vscode.ThemeIcon(node.action.icon);
     item.command = { command: node.action.command, title: node.action.label, arguments: [node.project] };
+    return item;
+  }
+
+  private resourceActionItem(node: ResourceActionNode): vscode.TreeItem {
+    const item = new vscode.TreeItem(node.action.label);
+    item.description = node.action.description;
+    item.iconPath = new vscode.ThemeIcon(node.action.icon);
+    const resourceNode: ResourceNode = { type: "resource", project: node.project, resource: node.resource };
+    item.command = { command: node.action.command, title: node.action.label, arguments: [resourceNode] };
+    return item;
+  }
+
+  private d1MigrationsItem(node: D1MigrationsNode): vscode.TreeItem {
+    const item = new vscode.TreeItem("Migrations", vscode.TreeItemCollapsibleState.Expanded);
+    item.description = "local · preview · remote";
+    item.tooltip = `Create, inspect, and apply migrations for ${node.resource.name}.`;
+    item.iconPath = new vscode.ThemeIcon("database");
     return item;
   }
 
@@ -319,7 +346,10 @@ export class WranglerTreeProvider implements vscode.TreeDataProvider<Node> {
   }
 
   private resourceItem(node: ResourceNode): vscode.TreeItem {
-    const item = new vscode.TreeItem(node.resource.name);
+    const item = new vscode.TreeItem(
+      node.resource.name,
+      node.resource.kind === "d1" ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
+    );
     const operation = this.operations.get(node.project.configUri.toString());
     const busy = operation?.state === "running" && operation.command?.split(/\s+/).includes(node.resource.name);
     item.description = busy ? "running" : node.resource.binding === node.resource.name ? undefined : node.resource.binding;

@@ -2,7 +2,7 @@
   "name": "explorer-for-wrangler",
   "displayName": "Explorer for Wrangler",
   "description": "Run Wrangler and explore Cloudflare Worker resources from the VS Code Activity Bar.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "jatatech",
   "license": "MIT",
   "icon": "media/explorer-for-wrangler.png",
@@ -240,8 +240,24 @@
         "title": "Wrangler: Create D1 Migration"
       },
       {
+        "command": "explorerForWrangler.d1ListLocal",
+        "title": "Wrangler: Show Pending Local D1 Migrations"
+      },
+      {
+        "command": "explorerForWrangler.d1ListPreview",
+        "title": "Wrangler: Show Pending Preview D1 Migrations"
+      },
+      {
+        "command": "explorerForWrangler.d1ListRemote",
+        "title": "Wrangler: Show Pending Remote D1 Migrations"
+      },
+      {
         "command": "explorerForWrangler.d1ApplyLocal",
         "title": "Wrangler: Apply D1 Migrations Locally"
+      },
+      {
+        "command": "explorerForWrangler.d1ApplyPreview",
+        "title": "Wrangler: Apply D1 Migrations to Preview"
       },
       {
         "command": "explorerForWrangler.d1ApplyRemote",
@@ -532,7 +548,23 @@
           "when": "false"
         },
         {
+          "command": "explorerForWrangler.d1ListLocal",
+          "when": "false"
+        },
+        {
+          "command": "explorerForWrangler.d1ListPreview",
+          "when": "false"
+        },
+        {
+          "command": "explorerForWrangler.d1ListRemote",
+          "when": "false"
+        },
+        {
           "command": "explorerForWrangler.d1ApplyLocal",
+          "when": "false"
+        },
+        {
+          "command": "explorerForWrangler.d1ApplyPreview",
           "when": "false"
         },
         {
