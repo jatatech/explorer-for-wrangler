@@ -107,15 +107,18 @@ export class WranglerOperations implements vscode.Disposable {
 
     if (options.revealOutput) this.showOutput();
     if (state === "succeeded" && options.notifySuccess !== false) {
-      const choice = await vscode.window.showInformationMessage(`${label} completed.`, "Show Output");
-      if (choice === "Show Output") this.showOutput();
+      void vscode.window.showInformationMessage(`${label} completed.`, "Show Output").then((choice) => {
+        if (choice === "Show Output") this.showOutput();
+      });
     } else if (state === "failed") {
-      const choice = await vscode.window.showErrorMessage(`${label} failed.`, "Show Output", "Open Terminal");
-      if (choice === "Show Output") this.showOutput();
-      if (choice === "Open Terminal") await this.runner.run(project, args, options.environment, label);
+      void vscode.window.showErrorMessage(`${label} failed.`, "Show Output", "Open Terminal").then(async (choice) => {
+        if (choice === "Show Output") this.showOutput();
+        if (choice === "Open Terminal") await this.runner.run(project, args, options.environment, label);
+      });
     } else if (state === "cancelled") {
-      const choice = await vscode.window.showInformationMessage(`${label} cancelled.`, "Show Output");
-      if (choice === "Show Output") this.showOutput();
+      void vscode.window.showInformationMessage(`${label} cancelled.`, "Show Output").then((choice) => {
+        if (choice === "Show Output") this.showOutput();
+      });
     }
     return result;
   }

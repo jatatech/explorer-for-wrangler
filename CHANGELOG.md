@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.1
+
+- Cleared bounded-operation busy state as soon as Wrangler exits instead of waiting for outcome notifications to be dismissed
+
 ## 1.1.0
 
 - Made configured D1 databases expandable with visible migration creation, pending-migration inspection, and Local, Preview, and Remote apply actions

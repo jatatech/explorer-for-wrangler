@@ -2,7 +2,7 @@
   "name": "explorer-for-wrangler",
   "displayName": "Explorer for Wrangler",
   "description": "Run Wrangler and explore Cloudflare Worker resources from the VS Code Activity Bar.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "publisher": "jatatech",
   "license": "MIT",
   "icon": "media/explorer-for-wrangler.png",
